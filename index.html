@@ -59,14 +59,14 @@
 
   // 🔥 Pega aquí tu configuración de Firebase
   const firebaseConfig = {
-  apiKey: "AIzaSyCy_Chd_afiSy9AZWXx1-eAcICJBlT6R4Q",
-  authDomain: "control-gastos-bc0a9.firebaseapp.com",
-  projectId: "control-gastos-bc0a9",
-  storageBucket: "control-gastos-bc0a9.firebasestorage.app",
-  messagingSenderId: "96369707835",
-  appId: "1:96369707835:web:7acbffde0169302463051e",
-  measurementId: "G-703F29KLH5"
-};
+    piKey: "AIzaSyCy_Chd_afiSy9AZWXx1-eAcICJBlT6R4Q",
+    authDomain: "control-gastos-bc0a9.firebaseapp.com",
+    projectId: "control-gastos-bc0a9",
+    storageBucket: "control-gastos-bc0a9.firebasestorage.app",
+    messagingSenderId: "96369707835",
+    appId: "1:96369707835:web:7acbffde0169302463051e",
+    measurementId: "G-703F29KLH5"
+  };
 
   // Inicializar Firebase
   const app = initializeApp(firebaseConfig);
@@ -118,21 +118,21 @@
     }
   });
 
-  // Guardar crédito
+  // Guardar crédito con merge
   async function setCredito() {
     credito = parseFloat(document.getElementById("creditoInput").value) || 0;
-    await setDoc(doc(db, "usuarios", userId), { credito, gastos });
+    await setDoc(doc(db, "usuarios", userId), { credito, gastos }, { merge: true });
     actualizarVista();
   }
 
-  // Agregar gasto
+  // Agregar gasto con merge
   async function agregarGasto() {
     const concepto = document.getElementById("concepto").value;
     const monto = parseFloat(document.getElementById("monto").value) || 0;
     if (!concepto || monto <= 0) return;
 
     gastos.push({ concepto, monto });
-    await setDoc(doc(db, "usuarios", userId), { credito, gastos });
+    await setDoc(doc(db, "usuarios", userId), { credito, gastos }, { merge: true });
     document.getElementById("concepto").value = "";
     document.getElementById("monto").value = "";
     actualizarVista();
