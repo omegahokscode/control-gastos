@@ -59,14 +59,14 @@
 
   // 🔥 Pega aquí tu configuración de Firebase
   const firebaseConfig = {
-    piKey: "AIzaSyCy_Chd_afiSy9AZWXx1-eAcICJBlT6R4Q",
-    authDomain: "control-gastos-bc0a9.firebaseapp.com",
-    projectId: "control-gastos-bc0a9",
-    storageBucket: "control-gastos-bc0a9.firebasestorage.app",
-    messagingSenderId: "96369707835",
-    appId: "1:96369707835:web:7acbffde0169302463051e",
-    measurementId: "G-703F29KLH5"
-  };
+  apiKey: "AIzaSyCy_Chd_afiSy9AZWXx1-eAcICJBlT6R4Q",
+  authDomain: "control-gastos-bc0a9.firebaseapp.com",
+  projectId: "control-gastos-bc0a9",
+  storageBucket: "control-gastos-bc0a9.firebasestorage.app",
+  messagingSenderId: "96369707835",
+  appId: "1:96369707835:web:7acbffde0169302463051e",
+  measurementId: "G-703F29KLH5"
+};
 
   // Inicializar Firebase
   const app = initializeApp(firebaseConfig);
@@ -82,7 +82,11 @@
     const email = document.getElementById("email").value;
     const pass = document.getElementById("password").value;
     try {
-      await createUserWithEmailAndPassword(auth, email, pass);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const uid = userCredential.user.uid;
+
+      // Crear documento inicial en Firestore
+      await setDoc(doc(db, "usuarios", uid), { credito: 0, gastos: [] });
     } catch (e) {
       document.getElementById("authError").innerText = e.message;
     }
@@ -138,16 +142,20 @@
     actualizarVista();
   }
 
-  // Cargar datos del usuario
+  // Cargar datos del usuario, creando documento si no existe
   async function cargarDatos() {
-    const docSnap = await getDoc(doc(db, "usuarios", userId));
-    if (docSnap.exists()) {
+    const docRef = doc(db, "usuarios", userId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      // Crear documento inicial si no existe
+      await setDoc(docRef, { credito: 0, gastos: [] });
+      credito = 0;
+      gastos = [];
+    } else {
       const data = docSnap.data();
       credito = data.credito || 0;
       gastos = data.gastos || [];
-    } else {
-      credito = 0;
-      gastos = [];
     }
     actualizarVista();
   }
