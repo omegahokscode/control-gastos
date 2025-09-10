@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Control de gastos para ABBY PI ✨</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
   <style>
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    .animate-fade-in {
-      animation: fadeIn 1.2s ease-in-out;
-    }
+    @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+    @keyframes fadeOut { from {opacity:1;} to {opacity:0;} }
+    .animate-fade-in { animation: fadeIn 1.2s ease-in-out; }
+    .animate-fade-out { animation: fadeOut 1s ease-in-out forwards; }
   </style>
 </head>
 <body class="bg-pink-50 font-sans min-h-screen flex flex-col items-center justify-center">
@@ -26,23 +25,20 @@
     </p>
   </div>
 
-  <!-- Pantalla de login / registro -->
+  <!-- Auth -->
   <div id="authDiv" class="hidden w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl shadow-lg relative mx-4 animate-fade-in">
     <h2 class="text-2xl sm:text-3xl font-bold text-center text-pink-500 mb-6">
       Control de gastos para ABBY PI ✨
     </h2>
 
-    <input type="email" id="email" placeholder="Correo"
+    <input id="email" type="email" placeholder="Correo"
       class="w-full p-3 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-pink-300">
 
-    <!-- Campo de contraseña con botón para ver -->
     <div class="relative mb-4">
-      <input type="password" id="password" placeholder="Contraseña"
+      <input id="password" type="password" placeholder="Contraseña"
         class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
-      <button type="button" id="togglePassword" 
-        class="absolute right-3 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600">
-        👁️
-      </button>
+      <button type="button" id="togglePassword"
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600">👁️</button>
     </div>
 
     <button id="btnRegister"
@@ -54,32 +50,40 @@
       Iniciar Sesión
     </button>
 
-    <!-- Mensajes dinámicos -->
     <div id="authMessage" class="text-center mt-4 text-sm font-medium"></div>
 
-    <!-- Footer -->
     <p class="absolute bottom-2 w-full text-center text-pink-400 text-sm">by Señor Corazón</p>
   </div>
 
-  <!-- Dashboard -->
-  <div id="appDiv" class="hidden w-full max-w-5xl bg-white p-6 sm:p-8 rounded-2xl shadow-lg relative mx-4 animate-fade-in">
+  <!-- App -->
+  <div id="appDiv" class="hidden w-full max-w-6xl bg-white p-6 sm:p-8 rounded-2xl shadow-lg relative mx-4 animate-fade-in">
     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
       <h2 class="text-xl sm:text-2xl font-bold text-pink-500 text-center sm:text-left">
         Control de gastos para ABBY PI ✨
       </h2>
-      <button id="btnLogout"
-        class="bg-pink-400 text-white px-4 py-2 rounded-full hover:bg-pink-500 transition">
-        Cerrar Sesión
-      </button>
+      <div class="flex gap-2">
+        <button id="btnDescargarPDF"
+          class="bg-green-400 text-white px-4 py-2 rounded-full hover:bg-green-500 transition">
+          Descargar Estado de Cuenta
+        </button>
+        <button id="btnReset"
+          class="bg-red-400 text-white px-4 py-2 rounded-full hover:bg-red-500 transition">
+          Borrar Todo
+        </button>
+        <button id="btnLogout"
+          class="bg-pink-400 text-white px-4 py-2 rounded-full hover:bg-pink-500 transition">
+          Cerrar Sesión
+        </button>
+      </div>
     </div>
 
-    <!-- Tarjeta de crédito -->
+    <!-- Crédito disponible -->
     <div class="bg-pink-100 p-4 rounded-xl mb-6 shadow-sm">
       <label class="block text-pink-700 font-semibold mb-2 text-center sm:text-left">
         Crédito disponible:
       </label>
       <div class="flex flex-col sm:flex-row gap-3">
-        <input type="number" id="creditoInput" placeholder="Monto de crédito"
+        <input id="creditoInput" type="number" placeholder="Monto de crédito"
           class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
         <button id="btnSetCredito"
           class="bg-pink-400 text-white px-4 py-2 rounded-lg hover:bg-pink-500 transition">
@@ -88,13 +92,13 @@
       </div>
     </div>
 
-    <!-- Formulario agregar gasto -->
+    <!-- Gasto normal -->
     <div class="bg-pink-50 p-4 rounded-xl mb-6 shadow-sm">
       <h3 class="text-lg font-semibold text-pink-500 mb-3 text-center sm:text-left">Agregar gasto</h3>
       <div class="flex flex-col md:flex-row gap-3">
-        <input type="text" id="concepto" placeholder="Concepto"
+        <input id="conceptoInput" type="text" placeholder="Concepto"
           class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
-        <input type="number" id="monto" placeholder="Monto"
+        <input id="montoInput" type="number" placeholder="Monto"
           class="w-full md:w-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
         <button id="btnAgregarGasto"
           class="bg-pink-400 text-white px-4 py-2 rounded-lg hover:bg-pink-500 transition">
@@ -103,18 +107,64 @@
       </div>
     </div>
 
-    <!-- Tabla de gastos -->
-    <div class="overflow-x-auto">
+    <!-- Compras a crédito / MSI -->
+    <div class="bg-pink-50 p-4 rounded-xl mb-6 shadow-sm">
+      <h3 class="text-lg font-semibold text-pink-500 mb-3 text-center sm:text-left">Compras a crédito / MSI</h3>
+      <div class="flex flex-col md:flex-row gap-3">
+        <input id="conceptoCredito" type="text" placeholder="Concepto"
+          class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+        <input id="montoCredito" type="number" placeholder="Monto total"
+          class="w-full md:w-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+        <select id="mesesCredito"
+          class="w-full md:w-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"></select>
+        <button id="btnAgregarCredito"
+          class="bg-pink-400 text-white px-4 py-2 rounded-lg hover:bg-pink-500 transition">
+          Agregar
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla gastos normales -->
+    <h3 class="text-lg font-semibold text-pink-500 mb-2">Gastos normales</h3>
+    <div class="overflow-x-auto mb-6">
       <table class="w-full border rounded-xl overflow-hidden">
         <thead class="bg-pink-100 text-pink-700">
           <tr>
-            <th class="p-3 text-left text-sm sm:text-base">Concepto</th>
-            <th class="p-3 text-left text-sm sm:text-base">Monto</th>
+            <th class="p-3">Concepto</th>
+            <th class="p-3">Monto</th>
           </tr>
         </thead>
-        <tbody id="tablaGastos" class="divide-y divide-pink-100">
-          <!-- Gastos dinámicos -->
-        </tbody>
+        <tbody id="tablaGastos" class="divide-y divide-pink-100"></tbody>
+      </table>
+    </div>
+
+    <!-- Tabla pagos MSI -->
+    <h3 class="text-lg font-semibold text-pink-500 mb-2">Pagos de compras a crédito</h3>
+    <div class="overflow-x-auto mb-6">
+      <table class="w-full border rounded-xl overflow-hidden">
+        <thead class="bg-pink-100 text-pink-700">
+          <tr>
+            <th class="p-3">Mes</th>
+            <th class="p-3">Concepto</th>
+            <th class="p-3">Pago</th>
+          </tr>
+        </thead>
+        <tbody id="tablaCreditos" class="divide-y divide-pink-100"></tbody>
+      </table>
+    </div>
+
+    <!-- Tabla movimientos generales -->
+    <h3 class="text-lg font-semibold text-pink-500 mb-2">Movimientos Generales</h3>
+    <div class="overflow-x-auto mb-6">
+      <table class="w-full border rounded-xl overflow-hidden">
+        <thead class="bg-pink-100 text-pink-700">
+          <tr>
+            <th class="p-3">Fecha / Hora</th>
+            <th class="p-3">Concepto</th>
+            <th class="p-3">Monto</th>
+          </tr>
+        </thead>
+        <tbody id="tablaMovimientos" class="divide-y divide-pink-100"></tbody>
       </table>
     </div>
 
@@ -122,10 +172,8 @@
     <div class="mt-6 flex flex-col sm:flex-row justify-between text-base sm:text-lg font-semibold text-pink-600 text-center sm:text-left gap-3">
       <p id="totalGastos">Total de gastos: $0</p>
       <p id="saldoRestante">Saldo restante: $0</p>
+      <p id="pagosMesActualElem">Pagos de este mes: $0</p>
     </div>
-
-    <!-- Footer -->
-    <p class="absolute bottom-2 left-0 right-0 text-center text-pink-400 text-sm">by Señor Corazón</p>
   </div>
 
 <script type="module">
@@ -149,187 +197,255 @@
 
   let userId = null;
   let gastos = [];
+  let creditos = [];
   let credito = 0;
+  let movimientos = [];
 
-  const authMessage = document.getElementById("authMessage");
+  function fechaTexto(d){
+    const dia = String(d.getDate()).padStart(2,'0');
+    const mes = String(d.getMonth()+1).padStart(2,'0');
+    const anio = d.getFullYear();
+    const horas = String(d.getHours()).padStart(2,'0');
+    const minutos = String(d.getMinutes()).padStart(2,'0');
+    return `${dia}/${mes}/${anio} ${horas}:${minutos} Hrs`;
+  }
 
-  // --- Pantalla de carga inicial ---
+  // Solo mes y año para pagos MSI
+  function mesAnioTexto(d){
+    return d.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+  }
+
+  function parseFechaTxt(ftxt){
+    const [fecha, hora] = ftxt.split(' ');
+    const [dd, mm, yyyy] = fecha.split('/').map(n=>parseInt(n,10));
+    const [HH, MM] = (hora||'00:00').split(':').map(n=>parseInt(n,10));
+    return new Date(yyyy, mm-1, dd, HH, MM);
+  }
+
+  // ---- Splash ----
   setTimeout(() => {
-    document.getElementById("loadingScreen").style.display = "none";
-    if (auth.currentUser) {
+    const loadingScreen = document.getElementById("loadingScreen");
+    loadingScreen.classList.add("animate-fade-out");
+    setTimeout(() => {
+      loadingScreen.style.display = "none";
+      if (auth.currentUser) {
+        document.getElementById("appDiv").classList.remove("hidden");
+      } else {
+        document.getElementById("authDiv").classList.remove("hidden");
+      }
+    }, 1000);
+  }, 3000);
+
+  // ---- Meses MSI ----
+  const selMeses = document.getElementById("mesesCredito");
+  for (let i = 1; i <= 48; i++) {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = `${i} meses`;
+    selMeses.appendChild(opt);
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      userId = user.uid;
+      await cargarDatos();
+      document.getElementById("authDiv").classList.add("hidden");
       document.getElementById("appDiv").classList.remove("hidden");
     } else {
+      userId = null;
       document.getElementById("authDiv").classList.remove("hidden");
+      document.getElementById("appDiv").classList.add("hidden");
     }
-  }, 5000);
-
-  // --- Alternar visibilidad de contraseña ---
-  const togglePassword = document.getElementById("togglePassword");
-  togglePassword.addEventListener("click", () => {
-    const passInput = document.getElementById("password");
-    const type = passInput.getAttribute("type") === "password" ? "text" : "password";
-    passInput.setAttribute("type", type);
-    togglePassword.textContent = type === "password" ? "👁️" : "🙈";
   });
 
-  // --- Mostrar mensajes dinámicos ---
-  function showMessage(message, color = "pink-500", showLoader = false) {
-    authMessage.innerHTML = `
-      <div class="flex flex-col items-center gap-2">
-        ${showLoader ? '<div class="w-6 h-6 border-4 border-pink-300 border-t-pink-500 rounded-full animate-spin"></div>' : ''}
-        <span class="text-${color}">${message}</span>
-      </div>
-    `;
+  async function guardar() {
+    await setDoc(doc(db, "usuarios", userId), { credito, gastos, creditos, movimientos }, { merge: true });
   }
 
-  // --- Registro ---
-  async function register() {
-    const email = document.getElementById("email").value;
-    const pass = document.getElementById("password").value;
-    if (!email || !pass) {
-      showMessage("Por favor, ingresa correo y contraseña", "red-500");
-      return;
-    }
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-      const uid = userCredential.user.uid;
-      await setDoc(doc(db, "usuarios", uid), { credito: 0, gastos: [] });
-
-      showMessage("Registro exitoso 🎉", "green-500", true);
-    } catch (e) {
-      showMessage("Error en registro: " + e.message, "red-500");
-    }
-  }
-
-  // --- Login ---
-  async function login() {
-    const email = document.getElementById("email").value;
-    const pass = document.getElementById("password").value;
-    if (!email || !pass) {
-      showMessage("Por favor, ingresa correo y contraseña", "red-500");
-      return;
-    }
-
-    try {
-      showMessage("Iniciando sesión...", "pink-500", true);
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch (e) {
-      showMessage("Error en login: " + e.message, "red-500");
-    }
-  }
-
-  // --- Logout ---
-  async function logout() {
-    await signOut(auth);
-    document.getElementById("appDiv").classList.add("hidden");
-    document.getElementById("authDiv").classList.remove("hidden");
-  }
-
-  // --- Guardar crédito ---
-  async function setCredito() {
-    credito = parseFloat(document.getElementById("creditoInput").value) || 0;
-    await setDoc(doc(db, "usuarios", userId), { credito, gastos }, { merge: true });
-    actualizarVista();
-  }
-
-  // --- Agregar gasto ---
-  async function agregarGasto() {
-    const concepto = document.getElementById("concepto").value;
-    const monto = parseFloat(document.getElementById("monto").value) || 0;
-    if (!concepto || monto <= 0) return;
-
-    gastos.push({ concepto, monto });
-    await setDoc(doc(db, "usuarios", userId), { credito, gastos }, { merge: true });
-    document.getElementById("concepto").value = "";
-    document.getElementById("monto").value = "";
-    actualizarVista();
-  }
-
-  // --- Actualizar monto directamente ---
-  async function actualizarMonto(index, nuevoValor) {
-    const nuevoMonto = parseFloat(nuevoValor);
-    if (isNaN(nuevoMonto) || nuevoMonto <= 0) return;
-
-    gastos[index].monto = nuevoMonto;
-    await setDoc(doc(db, "usuarios", userId), { credito, gastos }, { merge: true });
-    actualizarVista();
-  }
-
-  // --- Cargar datos ---
   async function cargarDatos() {
-    const docRef = doc(db, "usuarios", userId);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) {
-      await setDoc(docRef, { credito: 0, gastos: [] });
-      credito = 0; gastos = [];
+    const ref = doc(db, "usuarios", userId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, { credito: 0, gastos: [], creditos: [], movimientos: [] });
+      credito = 0; gastos = []; creditos = []; movimientos = [];
     } else {
-      const data = docSnap.data();
-      credito = data.credito || 0;
-      gastos = data.gastos || [];
+      const data = snap.data();
+      credito = data.credito ?? 0;
+      gastos = data.gastos ?? [];
+      creditos = data.creditos ?? [];
+      movimientos = data.movimientos ?? [];
     }
     actualizarVista();
   }
 
-  // --- Actualizar la vista ---
-  function actualizarVista() {
-    const tbody = document.querySelector("#tablaGastos");
-    tbody.innerHTML = "";
-    let total = 0;
+  async function resetDatos() {
+    if (!confirm("¿Seguro que quieres borrar todos los datos?")) return;
+    credito = 0; gastos = []; creditos = []; movimientos = [];
+    await guardar();
+    actualizarVista();
+  }
 
-    gastos.forEach((g, index) => {
-      total += g.monto;
-      tbody.innerHTML += `
-        <tr class="hover:bg-pink-50 transition">
-          <td class="p-3 text-sm sm:text-base">${g.concepto}</td>
-          <td class="p-3 text-sm sm:text-base">
-            <input 
-              type="number" 
-              value="${g.monto}" 
-              class="border rounded p-1 w-24 text-center focus:outline-none focus:ring-2 focus:ring-pink-300"
-              onchange="actualizarMonto(${index}, this.value)"
-            />
-          </td>
+  async function agregarGasto() {
+    const concepto = document.getElementById("conceptoInput").value.trim();
+    const monto = parseFloat(document.getElementById("montoInput").value);
+    if (!concepto || isNaN(monto) || monto <= 0) return;
+    gastos.push({ concepto, monto });
+    movimientos.push({ fechaTxt: fechaTexto(new Date()), concepto, monto });
+    await guardar();
+    document.getElementById("conceptoInput").value = "";
+    document.getElementById("montoInput").value = "";
+    actualizarVista();
+  }
+
+  function dividirCuotas(total, meses) {
+    const cents = Math.round(total * 100);
+    const base = Math.floor(cents / meses);
+    let resto = cents % meses;
+    const cuotas = [];
+    for (let i=0;i<meses;i++){
+      const extra = resto>0?1:0;
+      if (resto>0) resto--;
+      cuotas.push((base+extra)/100);
+    }
+    return cuotas;
+  }
+
+  async function agregarCredito() {
+    const concepto = document.getElementById("conceptoCredito").value.trim();
+    const monto = parseFloat(document.getElementById("montoCredito").value);
+    const meses = parseInt(document.getElementById("mesesCredito").value, 10);
+    if (!concepto || isNaN(monto) || monto <= 0 || meses <= 0) return;
+
+    const cuotas = dividirCuotas(monto, meses);
+    const ahora = new Date();
+
+    const pagos = cuotas.map((c, i) => {
+      const fechaCuota = new Date(ahora.getFullYear(), ahora.getMonth()+i, ahora.getDate());
+      return {
+        fechaISO: fechaCuota.toISOString(),
+        fechaTxt: mesAnioTexto(fechaCuota),
+        concepto: `${concepto} - Pago ${i+1}`,
+        monto: c
+      };
+    });
+
+    creditos.push({ concepto, monto, meses, pagos });
+
+    // Solo registrar el TOTAL de la compra en movimientos generales
+    movimientos.push({ fechaTxt: fechaTexto(new Date()), concepto: `${concepto} - TOTAL`, monto: monto });
+
+    await guardar();
+
+    document.getElementById("conceptoCredito").value = "";
+    document.getElementById("montoCredito").value = "";
+    document.getElementById("mesesCredito").value = "1";
+    actualizarVista();
+  }
+
+  function actualizarVista() {
+    const tbodyG = document.getElementById("tablaGastos");
+    tbodyG.innerHTML = "";
+    let totalGastosNormales = 0;
+    gastos.forEach(g => {
+      totalGastosNormales += g.monto;
+      tbodyG.innerHTML += `<tr><td class="p-3">${g.concepto}</td><td class="p-3">$${g.monto.toFixed(2)}</td></tr>`;
+    });
+
+    const tbodyC = document.getElementById("tablaCreditos");
+    tbodyC.innerHTML = "";
+    let totalMSICompleto = 0;
+    let pagosMesActual = 0;
+
+    const ahora = new Date();
+    const yNow = ahora.getFullYear();
+    const mNow = ahora.getMonth();
+
+    creditos.forEach(c => {
+      totalMSICompleto += c.monto;
+      (c.pagos ?? []).forEach(p => {
+        tbodyC.innerHTML += `
+          <tr>
+            <td class="p-3 capitalize">${p.fechaTxt}</td>
+            <td class="p-3">${p.concepto}</td>
+            <td class="p-3">$${p.monto.toFixed(2)}</td>
+          </tr>`;
+        const d = new Date(p.fechaISO);
+        if (d.getFullYear() === yNow && d.getMonth() === mNow) {
+          pagosMesActual += p.monto;
+        }
+      });
+    });
+
+    const tbodyM = document.getElementById("tablaMovimientos");
+    tbodyM.innerHTML = "";
+    const movOrdenados = [...movimientos].sort((a,b)=> parseFechaTxt(a.fechaTxt) - parseFechaTxt(b.fechaTxt));
+    movOrdenados.forEach(m => {
+      tbodyM.innerHTML += `
+        <tr>
+          <td class="p-3">${m.fechaTxt}</td>
+          <td class="p-3">${m.concepto}</td>
+          <td class="p-3">$${m.monto.toFixed(2)}</td>
         </tr>`;
     });
 
-    document.getElementById("totalGastos").innerText = "Total de gastos: $" + total.toFixed(2);
-    document.getElementById("saldoRestante").innerText = "Saldo restante: $" + (credito - total).toFixed(2);
+    const totalGeneral = totalGastosNormales + totalMSICompleto;
+    const saldoRest = credito - totalGeneral;
+
+    document.getElementById("totalGastos").textContent = "Total de gastos: $" + totalGeneral.toFixed(2);
+    document.getElementById("saldoRestante").textContent = "Saldo restante: $" + saldoRest.toFixed(2);
+    document.getElementById("pagosMesActualElem").textContent = "Pagos de este mes: $" + pagosMesActual.toFixed(2);
     document.getElementById("creditoInput").value = credito;
   }
 
-  // --- Manejar cambios de sesión ---
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      userId = user.uid;
-      showMessage("Cargando tu información...", "pink-500", true);
+  function generarPDF() {
+    const { jsPDF } = window.jspdf;
+    const docPDF = new jsPDF();
+    const ahora = new Date();
+    const tituloMes = ahora.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
 
-      setTimeout(() => {
-        document.getElementById("authDiv").classList.add("hidden");
-        document.getElementById("appDiv").classList.remove("hidden");
-        cargarDatos();
-        authMessage.textContent = ""; 
-      }, 2500);
-    } else {
-      userId = null;
-      setTimeout(() => {
-        document.getElementById("authDiv").classList.remove("hidden");
-        document.getElementById("appDiv").classList.add("hidden");
-        authMessage.textContent = "";
-      }, 2500);
-    }
+    docPDF.setFontSize(16);
+    docPDF.text(`Estado de Cuenta - ${tituloMes}`, 14, 20);
+
+    const datos = movimientos.map(m => [m.fechaTxt, m.concepto, `$${m.monto.toFixed(2)}`]);
+    docPDF.autoTable({
+      head: [['Fecha / Hora', 'Concepto', 'Monto']],
+      body: datos,
+      startY: 30
+    });
+
+    docPDF.save(`EstadoCuenta_${tituloMes}.pdf`);
+  }
+
+  document.getElementById("btnRegister").addEventListener("click", async () => {
+    const email = document.getElementById("email").value.trim();
+    const pass = document.getElementById("password").value.trim();
+    if (!email || !pass) return;
+    await createUserWithEmailAndPassword(auth, email, pass);
   });
 
-  // --- Botones ---
-  document.getElementById("btnRegister").addEventListener("click", register);
-  document.getElementById("btnLogin").addEventListener("click", login);
-  document.getElementById("btnLogout").addEventListener("click", logout);
-  document.getElementById("btnSetCredito").addEventListener("click", setCredito);
+  document.getElementById("btnLogin").addEventListener("click", async () => {
+    const email = document.getElementById("email").value.trim();
+    const pass = document.getElementById("password").value.trim();
+    if (!email || !pass) return;
+    await signInWithEmailAndPassword(auth, email, pass);
+  });
+
+  document.getElementById("btnLogout").addEventListener("click", async () => {
+    await signOut(auth);
+    document.getElementById("appDiv").classList.add("hidden");
+    document.getElementById("authDiv").classList.remove("hidden");
+  });
+
+  document.getElementById("btnSetCredito").addEventListener("click", async () => {
+    credito = parseFloat(document.getElementById("creditoInput").value) || 0;
+    await guardar();
+    actualizarVista();
+  });
+
   document.getElementById("btnAgregarGasto").addEventListener("click", agregarGasto);
-
-  // --- Exponer función al DOM ---
-  window.actualizarMonto = actualizarMonto;
+  document.getElementById("btnAgregarCredito").addEventListener("click", agregarCredito);
+  document.getElementById("btnReset").addEventListener("click", resetDatos);
+  document.getElementById("btnDescargarPDF").addEventListener("click", generarPDF);
 </script>
-
 </body>
 </html>
