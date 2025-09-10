@@ -20,8 +20,8 @@
   <h2>Control de Gastos</h2>
   <input type="email" id="email" placeholder="Correo">
   <input type="password" id="password" placeholder="Contraseña">
-  <button onclick="register()">Registrarse</button>
-  <button onclick="login()">Iniciar Sesión</button>
+  <button id="btnRegister">Registrarse</button>
+  <button id="btnLogin">Iniciar Sesión</button>
   <p id="authError" style="color:red;"></p>
 </div>
 
@@ -29,12 +29,12 @@
   <h2>Mis Gastos</h2>
   <label>Crédito disponible:</label>
   <input type="number" id="creditoInput" placeholder="Monto de crédito">
-  <button onclick="setCredito()">Actualizar crédito</button>
+  <button id="btnSetCredito">Actualizar crédito</button>
 
   <h3>Agregar gasto</h3>
   <input type="text" id="concepto" placeholder="Concepto">
   <input type="number" id="monto" placeholder="Monto">
-  <button onclick="agregarGasto()">Agregar</button>
+  <button id="btnAgregarGasto">Agregar</button>
 
   <table id="tablaGastos">
     <thead>
@@ -48,14 +48,17 @@
 
   <p class="saldo" id="totalGastos">Total de gastos: $0</p>
   <p class="saldo" id="saldoRestante">Saldo restante: $0</p>
-  <button onclick="logout()">Cerrar Sesión</button>
+  <button id="btnLogout">Cerrar Sesión</button>
 </div>
 
 <script type="module">
+  // 🔹 Firebase 11 imports
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+
+  // 🔹 Configuración Firebase
   const firebaseConfig = {
   apiKey: "AIzaSyCy_Chd_afiSy9AZWXx1-eAcICJBlT6R4Q",
   authDomain: "control-gastos-bc0a9.firebaseapp.com",
@@ -74,9 +77,8 @@
   let gastos = [];
   let credito = 0;
 
-  // Registro
+  // 🔹 Funciones principales
   async function register() {
-    console.log("Register llamado");
     const email = document.getElementById("email").value;
     const pass = document.getElementById("password").value;
     if (!email || !pass) { alert("Ingresa correo y contraseña"); return; }
@@ -84,56 +86,29 @@
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       const uid = userCredential.user.uid;
-      console.log("Registro exitoso:", uid);
       alert("Registro exitoso!");
-
-      // Documento inicial
       await setDoc(doc(db, "usuarios", uid), { credito: 0, gastos: [] });
     } catch (e) {
-      console.error("Error en registro:", e);
-      document.getElementById("authError").innerText = e.message;
       alert("Error en registro: " + e.message);
+      console.error(e);
     }
   }
 
-  // Login
   async function login() {
-    console.log("Login llamado");
     const email = document.getElementById("email").value;
     const pass = document.getElementById("password").value;
     if (!email || !pass) { alert("Ingresa correo y contraseña"); return; }
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-      console.log("Login exitoso:", userCredential.user.uid);
       alert("Login exitoso!");
     } catch (e) {
-      console.error("Error en login:", e);
-      document.getElementById("authError").innerText = e.message;
       alert("Error en login: " + e.message);
+      console.error(e);
     }
   }
 
-  // Logout
-  async function logout() {
-    await signOut(auth);
-    console.log("Sesión cerrada");
-  }
-
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      console.log("Usuario logueado:", user.uid);
-      userId = user.uid;
-      document.getElementById("authDiv").style.display = "none";
-      document.getElementById("appDiv").style.display = "block";
-      cargarDatos();
-    } else {
-      console.log("No hay usuario logueado");
-      userId = null;
-      document.getElementById("authDiv").style.display = "block";
-      document.getElementById("appDiv").style.display = "none";
-    }
-  });
+  async function logout() { await signOut(auth); }
 
   async function setCredito() {
     credito = parseFloat(document.getElementById("creditoInput").value) || 0;
@@ -156,12 +131,9 @@
   async function cargarDatos() {
     const docRef = doc(db, "usuarios", userId);
     const docSnap = await getDoc(docRef);
-
     if (!docSnap.exists()) {
-      console.log("Documento no existe, creando...");
       await setDoc(docRef, { credito: 0, gastos: [] });
-      credito = 0;
-      gastos = [];
+      credito = 0; gastos = [];
     } else {
       const data = docSnap.data();
       credito = data.credito || 0;
@@ -174,24 +146,35 @@
     const tbody = document.querySelector("#tablaGastos tbody");
     tbody.innerHTML = "";
     let total = 0;
-
     gastos.forEach(g => {
       total += g.monto;
-      const row = <tr><td>${g.concepto}</td><td>$${g.monto.toFixed(2)}</td></tr>;
-      tbody.innerHTML += row;
+      tbody.innerHTML += `<tr><td>${g.concepto}</td><td>$${g.monto.toFixed(2)}</td></tr>`;
     });
-
     document.getElementById("totalGastos").innerText = "Total de gastos: $" + total.toFixed(2);
     document.getElementById("saldoRestante").innerText = "Saldo restante: $" + (credito - total).toFixed(2);
     document.getElementById("creditoInput").value = credito;
   }
 
-  // 🔹 Hacer funciones accesibles desde los botones
-  window.register = register;
-  window.login = login;
-  window.logout = logout;
-  window.setCredito = setCredito;
-  window.agregarGasto = agregarGasto;
+  // 🔹 Escuchar cambios de sesión
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      userId = user.uid;
+      document.getElementById("authDiv").style.display = "none";
+      document.getElementById("appDiv").style.display = "block";
+      cargarDatos();
+    } else {
+      userId = null;
+      document.getElementById("authDiv").style.display = "block";
+      document.getElementById("appDiv").style.display = "none";
+    }
+  });
+
+  // 🔹 Botones
+  document.getElementById("btnRegister").addEventListener("click", register);
+  document.getElementById("btnLogin").addEventListener("click", login);
+  document.getElementById("btnLogout").addEventListener("click", logout);
+  document.getElementById("btnSetCredito").addEventListener("click", setCredito);
+  document.getElementById("btnAgregarGasto").addEventListener("click", agregarGasto);
 </script>
 
 </body>
