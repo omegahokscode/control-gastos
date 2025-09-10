@@ -172,7 +172,7 @@
     togglePassword.textContent = type === "password" ? "👁️" : "🙈";
   });
 
-  // --- Mostrar mensajes dinámicos con loader ---
+  // --- Mostrar mensajes dinámicos ---
   function showMessage(message, color = "pink-500", showLoader = false) {
     authMessage.innerHTML = `
       <div class="flex flex-col items-center gap-2">
@@ -246,6 +246,16 @@
     actualizarVista();
   }
 
+  // --- Actualizar monto directamente ---
+  async function actualizarMonto(index, nuevoValor) {
+    const nuevoMonto = parseFloat(nuevoValor);
+    if (isNaN(nuevoMonto) || nuevoMonto <= 0) return;
+
+    gastos[index].monto = nuevoMonto;
+    await setDoc(doc(db, "usuarios", userId), { credito, gastos }, { merge: true });
+    actualizarVista();
+  }
+
   // --- Cargar datos ---
   async function cargarDatos() {
     const docRef = doc(db, "usuarios", userId);
@@ -266,20 +276,29 @@
     const tbody = document.querySelector("#tablaGastos");
     tbody.innerHTML = "";
     let total = 0;
-    gastos.forEach(g => {
+
+    gastos.forEach((g, index) => {
       total += g.monto;
       tbody.innerHTML += `
         <tr class="hover:bg-pink-50 transition">
           <td class="p-3 text-sm sm:text-base">${g.concepto}</td>
-          <td class="p-3 text-sm sm:text-base">$${g.monto.toFixed(2)}</td>
+          <td class="p-3 text-sm sm:text-base">
+            <input 
+              type="number" 
+              value="${g.monto}" 
+              class="border rounded p-1 w-24 text-center focus:outline-none focus:ring-2 focus:ring-pink-300"
+              onchange="actualizarMonto(${index}, this.value)"
+            />
+          </td>
         </tr>`;
     });
+
     document.getElementById("totalGastos").innerText = "Total de gastos: $" + total.toFixed(2);
     document.getElementById("saldoRestante").innerText = "Saldo restante: $" + (credito - total).toFixed(2);
     document.getElementById("creditoInput").value = credito;
   }
 
-  // --- Manejar cambios de sesión con delay y loader ---
+  // --- Manejar cambios de sesión ---
   onAuthStateChanged(auth, user => {
     if (user) {
       userId = user.uid;
@@ -289,7 +308,7 @@
         document.getElementById("authDiv").classList.add("hidden");
         document.getElementById("appDiv").classList.remove("hidden");
         cargarDatos();
-        authMessage.textContent = ""; // Limpiar mensaje
+        authMessage.textContent = ""; 
       }, 2500);
     } else {
       userId = null;
@@ -307,6 +326,9 @@
   document.getElementById("btnLogout").addEventListener("click", logout);
   document.getElementById("btnSetCredito").addEventListener("click", setCredito);
   document.getElementById("btnAgregarGasto").addEventListener("click", agregarGasto);
+
+  // --- Exponer función al DOM ---
+  window.actualizarMonto = actualizarMonto;
 </script>
 
 </body>
