@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Control de Gastos</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    .container { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h2 { text-align: center; }
+    input, button { padding: 8px; margin: 5px 0; width: 100%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #eee; }
+    .saldo { font-weight: bold; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="authDiv">
+  <h2>Control de Gastos</h2>
+  <input type="email" id="email" placeholder="Correo">
+  <input type="password" id="password" placeholder="Contraseña">
+  <button onclick="register()">Registrarse</button>
+  <button onclick="login()">Iniciar Sesión</button>
+  <p id="authError" style="color:red;"></p>
+</div>
+
+<div class="container" id="appDiv" style="display:none;">
+  <h2>Mis Gastos</h2>
+  <label>Crédito disponible:</label>
+  <input type="number" id="creditoInput" placeholder="Monto de crédito">
+  <button onclick="setCredito()">Actualizar crédito</button>
+
+  <h3>Agregar gasto</h3>
+  <input type="text" id="concepto" placeholder="Concepto">
+  <input type="number" id="monto" placeholder="Monto">
+  <button onclick="agregarGasto()">Agregar</button>
+
+  <table id="tablaGastos">
+    <thead>
+      <tr>
+        <th>Concepto</th>
+        <th>Monto</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <p class="saldo" id="totalGastos">Total de gastos: $0</p>
+  <p class="saldo" id="saldoRestante">Saldo restante: $0</p>
+  <button onclick="logout()">Cerrar Sesión</button>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
+<script>
+  // 🔥 Pega aquí tu configuración de Firebase
+  const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_PROYECTO.firebaseapp.com",
+    projectId: "TU_PROYECTO",
+    storageBucket: "TU_PROYECTO.appspot.com",
+    messagingSenderId: "NUMERO",
+    appId: "APP_ID"
+  };
+
+  // Inicializar Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let userId = null;
+  let gastos = [];
+  let credito = 0;
+
+  // Registro de usuario
+  async function register() {
+    const email = document.getElementById("email").value;
+    const pass = document.getElementById("password").value;
+    try {
+      await auth.createUserWithEmailAndPassword(email, pass);
+    } catch (e) {
+      document.getElementById("authError").innerText = e.message;
+    }
+  }
+
+  // Login
+  async function login() {
+    const email = document.getElementById("email").value;
+    const pass = document.getElementById("password").value;
+    try {
+      await auth.signInWithEmailAndPassword(email, pass);
+    } catch (e) {
+      document.getElementById("authError").innerText = e.message;
+    }
+  }
+
+  // Logout
+  async function logout() {
+    await auth.signOut();
+  }
+
+  // Escucha cambios de sesión
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      userId = user.uid;
+      document.getElementById("authDiv").style.display = "none";
+      document.getElementById("appDiv").style.display = "block";
+      cargarDatos();
+    } else {
+      userId = null;
+      document.getElementById("authDiv").style.display = "block";
+      document.getElementById("appDiv").style.display = "none";
+    }
+  });
+
+  // Guardar crédito
+  async function setCredito() {
+    credito = parseFloat(document.getElementById("creditoInput").value) || 0;
+    await db.collection("usuarios").doc(userId).set({
+      credito, gastos
+    });
+    actualizarVista();
+  }
+
+  // Agregar gasto
+  async function agregarGasto() {
+    const concepto = document.getElementById("concepto").value;
+    const monto = parseFloat(document.getElementById("monto").value) || 0;
+    if (!concepto || monto <= 0) return;
+
+    gastos.push({ concepto, monto });
+    await db.collection("usuarios").doc(userId).set({
+      credito, gastos
+    });
+
+    document.getElementById("concepto").value = "";
+    document.getElementById("monto").value = "";
+    actualizarVista();
+  }
+
+  // Cargar datos del usuario
+  async function cargarDatos() {
+    const doc = await db.collection("usuarios").doc(userId).get();
+    if (doc.exists) {
+      const data = doc.data();
+      credito = data.credito || 0;
+      gastos = data.gastos || [];
+    } else {
+      credito = 0;
+      gastos = [];
+    }
+    actualizarVista();
+  }
+
+  // Actualizar pantalla
+  function actualizarVista() {
+    const tbody = document.querySelector("#tablaGastos tbody");
+    tbody.innerHTML = "";
+    let total = 0;
+
+    gastos.forEach(g => {
+      total += g.monto;
+      const row = `<tr><td>${g.concepto}</td><td>$${g.monto.toFixed(2)}</td></tr>`;
+      tbody.innerHTML += row;
+    });
+
+    document.getElementById("totalGastos").innerText = "Total de gastos: $" + total.toFixed(2);
+    document.getElementById("saldoRestante").innerText = "Saldo restante: $" + (credito - total).toFixed(2);
+    document.getElementById("creditoInput").value = credito;
+  }
+</script>
+</body>
+</html>
