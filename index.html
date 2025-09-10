@@ -196,11 +196,12 @@
   const db = getFirestore(app);
 
   let userId = null;
-  let gastos = [];
-  let creditos = [];
-  let credito = 0;
-  let movimientos = [];
+  let gastos = [];     // [{concepto, monto}]
+  let creditos = [];   // [{concepto, monto, meses, pagos:[{fechaISO, fechaTxt (Mes Año), concepto (con Pago #), monto}]}]
+  let credito = 0;     // crédito inicial/total disponible
+  let movimientos = []; // [{fechaTxt: 'DD/MM/YYYY HH:mm Hrs', concepto, monto}] (incluye gastos y SOLO el TOTAL de cada MSI)
 
+  // ---- Utilidades fecha/hora ----
   function fechaTexto(d){
     const dia = String(d.getDate()).padStart(2,'0');
     const mes = String(d.getMonth()+1).padStart(2,'0');
@@ -209,12 +210,9 @@
     const minutos = String(d.getMinutes()).padStart(2,'0');
     return `${dia}/${mes}/${anio} ${horas}:${minutos} Hrs`;
   }
-
-  // Solo mes y año para pagos MSI
   function mesAnioTexto(d){
     return d.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
   }
-
   function parseFechaTxt(ftxt){
     const [fecha, hora] = ftxt.split(' ');
     const [dd, mm, yyyy] = fecha.split('/').map(n=>parseInt(n,10));
@@ -222,7 +220,7 @@
     return new Date(yyyy, mm-1, dd, HH, MM);
   }
 
-  // ---- Splash ----
+  // ---- Splash: 3s + fade ----
   setTimeout(() => {
     const loadingScreen = document.getElementById("loadingScreen");
     loadingScreen.classList.add("animate-fade-out");
@@ -236,7 +234,15 @@
     }, 1000);
   }, 3000);
 
-  // ---- Meses MSI ----
+  // ---- Toggle password ----
+  document.getElementById("togglePassword").addEventListener("click", () => {
+    const pass = document.getElementById("password");
+    const t = pass.type === "password" ? "text" : "password";
+    pass.type = t;
+    document.getElementById("togglePassword").textContent = t === "password" ? "👁️" : "🙈";
+  });
+
+  // ---- Meses MSI 1..48 ----
   const selMeses = document.getElementById("mesesCredito");
   for (let i = 1; i <= 48; i++) {
     const opt = document.createElement("option");
@@ -245,6 +251,7 @@
     selMeses.appendChild(opt);
   }
 
+  // ---- Sesión ----
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       userId = user.uid;
@@ -258,10 +265,10 @@
     }
   });
 
+  // ---- Firestore I/O ----
   async function guardar() {
     await setDoc(doc(db, "usuarios", userId), { credito, gastos, creditos, movimientos }, { merge: true });
   }
-
   async function cargarDatos() {
     const ref = doc(db, "usuarios", userId);
     const snap = await getDoc(ref);
@@ -278,25 +285,48 @@
     actualizarVista();
   }
 
+  // ---- Reset ----
   async function resetDatos() {
-    if (!confirm("¿Seguro que quieres borrar todos los datos?")) return;
+    if (!confirm("¿Seguro que quieres borrar todos los datos? Esta acción no se puede deshacer.")) return;
     credito = 0; gastos = []; creditos = []; movimientos = [];
     await guardar();
     actualizarVista();
   }
 
+  // ---- Gasto normal ----
   async function agregarGasto() {
     const concepto = document.getElementById("conceptoInput").value.trim();
     const monto = parseFloat(document.getElementById("montoInput").value);
     if (!concepto || isNaN(monto) || monto <= 0) return;
+
     gastos.push({ concepto, monto });
+
+    // Movimiento con fecha/hora actual
     movimientos.push({ fechaTxt: fechaTexto(new Date()), concepto, monto });
+
     await guardar();
     document.getElementById("conceptoInput").value = "";
     document.getElementById("montoInput").value = "";
     actualizarVista();
   }
 
+  // Editar gasto: concepto y monto
+  async function actualizarConceptoGasto(index, value){
+    gastos[index].concepto = String(value).trim();
+    await guardar();
+    actualizarVista();
+  }
+  async function actualizarMontoGasto(index, value){
+    const v = parseFloat(value);
+    if (isNaN(v) || v <= 0) return;
+    gastos[index].monto = v;
+    await guardar();
+    actualizarVista();
+  }
+  window.actualizarConceptoGasto = actualizarConceptoGasto;
+  window.actualizarMontoGasto = actualizarMontoGasto;
+
+  // ---- Dividir cuotas MSI (centavos exactos) ----
   function dividirCuotas(total, meses) {
     const cents = Math.round(total * 100);
     const base = Math.floor(cents / meses);
@@ -310,6 +340,7 @@
     return cuotas;
   }
 
+  // ---- Agregar compra MSI ----
   async function agregarCredito() {
     const concepto = document.getElementById("conceptoCredito").value.trim();
     const monto = parseFloat(document.getElementById("montoCredito").value);
@@ -320,18 +351,19 @@
     const ahora = new Date();
 
     const pagos = cuotas.map((c, i) => {
-      const fechaCuota = new Date(ahora.getFullYear(), ahora.getMonth()+i, ahora.getDate());
+      // Cada pago: fecha solo Mes y Año
+      const fechaCuota = new Date(ahora.getFullYear(), ahora.getMonth()+i, 1);
       return {
         fechaISO: fechaCuota.toISOString(),
-        fechaTxt: mesAnioTexto(fechaCuota),
-        concepto: `${concepto} - Pago ${i+1}`,
+        fechaTxt: mesAnioTexto(fechaCuota),      // SOLO Mes Año
+        concepto: `${concepto} - Pago ${i+1}`,   // Enumerado
         monto: c
       };
     });
 
     creditos.push({ concepto, monto, meses, pagos });
 
-    // Solo registrar el TOTAL de la compra en movimientos generales
+    // Movimientos generales: SOLO el TOTAL de la compra
     movimientos.push({ fechaTxt: fechaTexto(new Date()), concepto: `${concepto} - TOTAL`, monto: monto });
 
     await guardar();
@@ -342,15 +374,60 @@
     actualizarVista();
   }
 
+  // Editar concepto de un crédito (afecta todas las filas de pagos visuales)
+  async function actualizarConceptoCredito(indexCredito, value){
+    const nuevo = String(value).trim();
+    creditos[indexCredito].concepto = nuevo;
+    // Actualizar etiquetas "Pago #"
+    creditos[indexCredito].pagos = (creditos[indexCredito].pagos||[]).map((p, i) => ({
+      ...p,
+      concepto: `${nuevo} - Pago ${i+1}`
+    }));
+    // También actualizar el movimiento TOTAL correspondiente (el más reciente que matchee " - TOTAL")
+    for (let i = movimientos.length - 1; i >= 0; i--) {
+      if (movimientos[i].concepto.endsWith(" - TOTAL")) {
+        const base = movimientos[i].concepto.replace(" - TOTAL", "");
+        // si coincide con el anterior nombre
+        if (base === nuevo || base === "" || base) {
+          // No podemos saber con 100% de certeza; mejor heurística:
+          // si el monto coincide con el total del crédito, actualizamos
+          if (movimientos[i].monto === creditos[indexCredito].monto) {
+            movimientos[i].concepto = `${nuevo} - TOTAL`;
+            break;
+          }
+        }
+      }
+    }
+    await guardar();
+    actualizarVista();
+  }
+  window.actualizarConceptoCredito = actualizarConceptoCredito;
+
+  // ---- Render & Totales ----
   function actualizarVista() {
+    // Gastos normales
     const tbodyG = document.getElementById("tablaGastos");
     tbodyG.innerHTML = "";
     let totalGastosNormales = 0;
-    gastos.forEach(g => {
+    gastos.forEach((g, i) => {
       totalGastosNormales += g.monto;
-      tbodyG.innerHTML += `<tr><td class="p-3">${g.concepto}</td><td class="p-3">$${g.monto.toFixed(2)}</td></tr>`;
+      tbodyG.innerHTML += `
+        <tr>
+          <td class="p-3">
+            <input class="w-full border rounded p-1 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                   value="${g.concepto}"
+                   onchange="actualizarConceptoGasto(${i}, this.value)" />
+          </td>
+          <td class="p-3">
+            <input type="number"
+                   class="w-28 text-right border rounded p-1 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                   value="${g.monto}"
+                   onchange="actualizarMontoGasto(${i}, this.value)" />
+          </td>
+        </tr>`;
     });
 
+    // Créditos / MSI
     const tbodyC = document.getElementById("tablaCreditos");
     tbodyC.innerHTML = "";
     let totalMSICompleto = 0;
@@ -360,13 +437,18 @@
     const yNow = ahora.getFullYear();
     const mNow = ahora.getMonth();
 
-    creditos.forEach(c => {
+    creditos.forEach((c, idxCredito) => {
       totalMSICompleto += c.monto;
       (c.pagos ?? []).forEach(p => {
         tbodyC.innerHTML += `
           <tr>
             <td class="p-3 capitalize">${p.fechaTxt}</td>
-            <td class="p-3">${p.concepto}</td>
+            <td class="p-3">
+              <input class="w-full border rounded p-1 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                     value="${c.concepto}"
+                     onchange="actualizarConceptoCredito(${idxCredito}, this.value)" />
+              <div class="text-xs text-pink-500 mt-1">${p.concepto}</div>
+            </td>
             <td class="p-3">$${p.monto.toFixed(2)}</td>
           </tr>`;
         const d = new Date(p.fechaISO);
@@ -376,6 +458,7 @@
       });
     });
 
+    // Movimientos Generales (gastos + SOLO totales MSI)
     const tbodyM = document.getElementById("tablaMovimientos");
     tbodyM.innerHTML = "";
     const movOrdenados = [...movimientos].sort((a,b)=> parseFechaTxt(a.fechaTxt) - parseFechaTxt(b.fechaTxt));
@@ -383,11 +466,17 @@
       tbodyM.innerHTML += `
         <tr>
           <td class="p-3">${m.fechaTxt}</td>
-          <td class="p-3">${m.concepto}</td>
+          <td class="p-3">
+            <input class="w-full border rounded p-1 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                   value="${m.concepto}"
+                   onchange="(async()=>{ m.concepto=this.value; await guardar(); actualizarVista(); }).call(this)" />
+          </td>
           <td class="p-3">$${m.monto.toFixed(2)}</td>
         </tr>`;
     });
 
+    // Totales finales
+    // Total de gastos GENERAL = gastos normales + TOTAL de cada MSI
     const totalGeneral = totalGastosNormales + totalMSICompleto;
     const saldoRest = credito - totalGeneral;
 
@@ -397,25 +486,56 @@
     document.getElementById("creditoInput").value = credito;
   }
 
+  // ---- PDF del mes actual con crédito inicial, detalle y resumen ----
   function generarPDF() {
     const { jsPDF } = window.jspdf;
     const docPDF = new jsPDF();
+
     const ahora = new Date();
+    const mes = ahora.getMonth();
+    const anio = ahora.getFullYear();
     const tituloMes = ahora.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
 
-    docPDF.setFontSize(16);
+    // Calcular total de gastos del mes desde MOVIMIENTOS (gastos + totales MSI)
+    let totalGastosMes = 0;
+    const datos = [];
+    movimientos.forEach(m => {
+      const d = parseFechaTxt(m.fechaTxt);
+      if (d.getFullYear() === anio && d.getMonth() === mes) {
+        totalGastosMes += m.monto;
+        datos.push([m.fechaTxt, m.concepto, `$${m.monto.toFixed(2)}`]);
+      }
+    });
+    const saldoRestante = credito - totalGastosMes;
+
+    // Encabezado
+    docPDF.setFontSize(18);
     docPDF.text(`Estado de Cuenta - ${tituloMes}`, 14, 20);
 
-    const datos = movimientos.map(m => [m.fechaTxt, m.concepto, `$${m.monto.toFixed(2)}`]);
+    docPDF.setFontSize(12);
+    docPDF.text(`Crédito Inicial: $${credito.toFixed(2)}`, 14, 30);
+
+    // Tabla
     docPDF.autoTable({
       head: [['Fecha / Hora', 'Concepto', 'Monto']],
       body: datos,
-      startY: 30
+      startY: 40,
+      theme: 'striped',
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [255, 192, 203], textColor: 40, fontStyle: 'bold' },
     });
 
+    // Resumen
+    const finalY = (docPDF.lastAutoTable && docPDF.lastAutoTable.finalY) ? docPDF.lastAutoTable.finalY + 10 : 50;
+    docPDF.setFontSize(12);
+    docPDF.text(`Total de Gastos (mes): $${totalGastosMes.toFixed(2)}`, 14, finalY);
+    docPDF.text(`Saldo Restante: $${saldoRestante.toFixed(2)}`, 14, finalY + 8);
+
+    // Descargar
     docPDF.save(`EstadoCuenta_${tituloMes}.pdf`);
   }
 
+  // ---- Eventos UI ----
   document.getElementById("btnRegister").addEventListener("click", async () => {
     const email = document.getElementById("email").value.trim();
     const pass = document.getElementById("password").value.trim();
@@ -447,5 +567,6 @@
   document.getElementById("btnReset").addEventListener("click", resetDatos);
   document.getElementById("btnDescargarPDF").addEventListener("click", generarPDF);
 </script>
+
 </body>
 </html>
