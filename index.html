@@ -2,72 +2,146 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Control de Gastos</title>
+  <title>Control de gastos para ABBY PI ✨</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-    .container { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; }
-    h2 { text-align: center; }
-    input, button { padding: 8px; margin: 5px 0; width: 100%; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #eee; }
-    .saldo { font-weight: bold; margin-top: 15px; }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .animate-fade-in {
+      animation: fadeIn 1.2s ease-in-out;
+    }
   </style>
 </head>
-<body>
+<body class="bg-pink-50 font-sans min-h-screen flex flex-col items-center justify-center">
 
-<div class="container" id="authDiv">
-  <h2>Control de Gastos</h2>
-  <input type="email" id="email" placeholder="Correo">
-  <input type="password" id="password" placeholder="Contraseña">
-  <button id="btnRegister">Registrarse</button>
-  <button id="btnLogin">Iniciar Sesión</button>
-  <p id="authError" style="color:red;"></p>
-</div>
+  <!-- Pantalla de carga inicial -->
+  <div id="loadingScreen" class="fixed inset-0 flex flex-col items-center justify-center bg-pink-50 z-50 animate-fade-in">
+    <h1 class="text-2xl sm:text-3xl font-bold text-pink-500 mb-4 text-center">
+      Control de gastos para ABBY PI ✨
+    </h1>
+    <p class="text-lg text-pink-400 animate-pulse text-center">
+      Esperame princesa, ahorita carga...
+    </p>
+  </div>
 
-<div class="container" id="appDiv" style="display:none;">
-  <h2>Mis Gastos</h2>
-  <label>Crédito disponible:</label>
-  <input type="number" id="creditoInput" placeholder="Monto de crédito">
-  <button id="btnSetCredito">Actualizar crédito</button>
+  <!-- Pantalla de login / registro -->
+  <div id="authDiv" class="hidden w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl shadow-lg relative mx-4 animate-fade-in">
+    <h2 class="text-2xl sm:text-3xl font-bold text-center text-pink-500 mb-6">
+      Control de gastos para ABBY PI ✨
+    </h2>
 
-  <h3>Agregar gasto</h3>
-  <input type="text" id="concepto" placeholder="Concepto">
-  <input type="number" id="monto" placeholder="Monto">
-  <button id="btnAgregarGasto">Agregar</button>
+    <input type="email" id="email" placeholder="Correo"
+      class="w-full p-3 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-pink-300">
 
-  <table id="tablaGastos">
-    <thead>
-      <tr>
-        <th>Concepto</th>
-        <th>Monto</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <!-- Campo de contraseña con botón para ver -->
+    <div class="relative mb-4">
+      <input type="password" id="password" placeholder="Contraseña"
+        class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+      <button type="button" id="togglePassword" 
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600">
+        👁️
+      </button>
+    </div>
 
-  <p class="saldo" id="totalGastos">Total de gastos: $0</p>
-  <p class="saldo" id="saldoRestante">Saldo restante: $0</p>
-  <button id="btnLogout">Cerrar Sesión</button>
-</div>
+    <button id="btnRegister"
+      class="w-full bg-pink-400 text-white py-2 rounded-full hover:bg-pink-500 transition mb-3">
+      Registrarse
+    </button>
+    <button id="btnLogin"
+      class="w-full bg-pink-300 text-white py-2 rounded-full hover:bg-pink-400 transition">
+      Iniciar Sesión
+    </button>
+
+    <!-- Mensajes dinámicos -->
+    <div id="authMessage" class="text-center mt-4 text-sm font-medium"></div>
+
+    <!-- Footer -->
+    <p class="absolute bottom-2 w-full text-center text-pink-400 text-sm">by Señor Corazón</p>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="appDiv" class="hidden w-full max-w-5xl bg-white p-6 sm:p-8 rounded-2xl shadow-lg relative mx-4 animate-fade-in">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+      <h2 class="text-xl sm:text-2xl font-bold text-pink-500 text-center sm:text-left">
+        Control de gastos para ABBY PI ✨
+      </h2>
+      <button id="btnLogout"
+        class="bg-pink-400 text-white px-4 py-2 rounded-full hover:bg-pink-500 transition">
+        Cerrar Sesión
+      </button>
+    </div>
+
+    <!-- Tarjeta de crédito -->
+    <div class="bg-pink-100 p-4 rounded-xl mb-6 shadow-sm">
+      <label class="block text-pink-700 font-semibold mb-2 text-center sm:text-left">
+        Crédito disponible:
+      </label>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input type="number" id="creditoInput" placeholder="Monto de crédito"
+          class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+        <button id="btnSetCredito"
+          class="bg-pink-400 text-white px-4 py-2 rounded-lg hover:bg-pink-500 transition">
+          Actualizar
+        </button>
+      </div>
+    </div>
+
+    <!-- Formulario agregar gasto -->
+    <div class="bg-pink-50 p-4 rounded-xl mb-6 shadow-sm">
+      <h3 class="text-lg font-semibold text-pink-500 mb-3 text-center sm:text-left">Agregar gasto</h3>
+      <div class="flex flex-col md:flex-row gap-3">
+        <input type="text" id="concepto" placeholder="Concepto"
+          class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+        <input type="number" id="monto" placeholder="Monto"
+          class="w-full md:w-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+        <button id="btnAgregarGasto"
+          class="bg-pink-400 text-white px-4 py-2 rounded-lg hover:bg-pink-500 transition">
+          Agregar
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla de gastos -->
+    <div class="overflow-x-auto">
+      <table class="w-full border rounded-xl overflow-hidden">
+        <thead class="bg-pink-100 text-pink-700">
+          <tr>
+            <th class="p-3 text-left text-sm sm:text-base">Concepto</th>
+            <th class="p-3 text-left text-sm sm:text-base">Monto</th>
+          </tr>
+        </thead>
+        <tbody id="tablaGastos" class="divide-y divide-pink-100">
+          <!-- Gastos dinámicos -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totales -->
+    <div class="mt-6 flex flex-col sm:flex-row justify-between text-base sm:text-lg font-semibold text-pink-600 text-center sm:text-left gap-3">
+      <p id="totalGastos">Total de gastos: $0</p>
+      <p id="saldoRestante">Saldo restante: $0</p>
+    </div>
+
+    <!-- Footer -->
+    <p class="absolute bottom-2 left-0 right-0 text-center text-pink-400 text-sm">by Señor Corazón</p>
+  </div>
 
 <script type="module">
-  // 🔹 Firebase 11 imports
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-
-  // 🔹 Configuración Firebase
   const firebaseConfig = {
-  apiKey: "AIzaSyCy_Chd_afiSy9AZWXx1-eAcICJBlT6R4Q",
-  authDomain: "control-gastos-bc0a9.firebaseapp.com",
-  projectId: "control-gastos-bc0a9",
-  storageBucket: "control-gastos-bc0a9.firebasestorage.app",
-  messagingSenderId: "96369707835",
-  appId: "1:96369707835:web:7acbffde0169302463051e",
-  measurementId: "G-703F29KLH5"
-};
+    apiKey: "AIzaSyCy_Chd_afiSy9AZWXx1-eAcICJBlT6R4Q",
+    authDomain: "control-gastos-bc0a9.firebaseapp.com",
+    projectId: "control-gastos-bc0a9",
+    storageBucket: "control-gastos-bc0a9.firebasestorage.app",
+    messagingSenderId: "96369707835",
+    appId: "1:96369707835:web:7acbffde0169302463051e",
+    measurementId: "G-703F29KLH5"
+  };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -77,45 +151,89 @@
   let gastos = [];
   let credito = 0;
 
-  // 🔹 Funciones principales
+  const authMessage = document.getElementById("authMessage");
+
+  // --- Pantalla de carga inicial ---
+  setTimeout(() => {
+    document.getElementById("loadingScreen").style.display = "none";
+    if (auth.currentUser) {
+      document.getElementById("appDiv").classList.remove("hidden");
+    } else {
+      document.getElementById("authDiv").classList.remove("hidden");
+    }
+  }, 5000);
+
+  // --- Alternar visibilidad de contraseña ---
+  const togglePassword = document.getElementById("togglePassword");
+  togglePassword.addEventListener("click", () => {
+    const passInput = document.getElementById("password");
+    const type = passInput.getAttribute("type") === "password" ? "text" : "password";
+    passInput.setAttribute("type", type);
+    togglePassword.textContent = type === "password" ? "👁️" : "🙈";
+  });
+
+  // --- Mostrar mensajes dinámicos con loader ---
+  function showMessage(message, color = "pink-500", showLoader = false) {
+    authMessage.innerHTML = `
+      <div class="flex flex-col items-center gap-2">
+        ${showLoader ? '<div class="w-6 h-6 border-4 border-pink-300 border-t-pink-500 rounded-full animate-spin"></div>' : ''}
+        <span class="text-${color}">${message}</span>
+      </div>
+    `;
+  }
+
+  // --- Registro ---
   async function register() {
     const email = document.getElementById("email").value;
     const pass = document.getElementById("password").value;
-    if (!email || !pass) { alert("Ingresa correo y contraseña"); return; }
+    if (!email || !pass) {
+      showMessage("Por favor, ingresa correo y contraseña", "red-500");
+      return;
+    }
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       const uid = userCredential.user.uid;
-      alert("Registro exitoso!");
       await setDoc(doc(db, "usuarios", uid), { credito: 0, gastos: [] });
+
+      showMessage("Registro exitoso 🎉", "green-500", true);
     } catch (e) {
-      alert("Error en registro: " + e.message);
-      console.error(e);
+      showMessage("Error en registro: " + e.message, "red-500");
     }
   }
 
+  // --- Login ---
   async function login() {
     const email = document.getElementById("email").value;
     const pass = document.getElementById("password").value;
-    if (!email || !pass) { alert("Ingresa correo y contraseña"); return; }
+    if (!email || !pass) {
+      showMessage("Por favor, ingresa correo y contraseña", "red-500");
+      return;
+    }
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-      alert("Login exitoso!");
+      showMessage("Iniciando sesión...", "pink-500", true);
+      await signInWithEmailAndPassword(auth, email, pass);
     } catch (e) {
-      alert("Error en login: " + e.message);
-      console.error(e);
+      showMessage("Error en login: " + e.message, "red-500");
     }
   }
 
-  async function logout() { await signOut(auth); }
+  // --- Logout ---
+  async function logout() {
+    await signOut(auth);
+    document.getElementById("appDiv").classList.add("hidden");
+    document.getElementById("authDiv").classList.remove("hidden");
+  }
 
+  // --- Guardar crédito ---
   async function setCredito() {
     credito = parseFloat(document.getElementById("creditoInput").value) || 0;
     await setDoc(doc(db, "usuarios", userId), { credito, gastos }, { merge: true });
     actualizarVista();
   }
 
+  // --- Agregar gasto ---
   async function agregarGasto() {
     const concepto = document.getElementById("concepto").value;
     const monto = parseFloat(document.getElementById("monto").value) || 0;
@@ -128,6 +246,7 @@
     actualizarVista();
   }
 
+  // --- Cargar datos ---
   async function cargarDatos() {
     const docRef = doc(db, "usuarios", userId);
     const docSnap = await getDoc(docRef);
@@ -142,34 +261,47 @@
     actualizarVista();
   }
 
+  // --- Actualizar la vista ---
   function actualizarVista() {
-    const tbody = document.querySelector("#tablaGastos tbody");
+    const tbody = document.querySelector("#tablaGastos");
     tbody.innerHTML = "";
     let total = 0;
     gastos.forEach(g => {
       total += g.monto;
-      tbody.innerHTML += `<tr><td>${g.concepto}</td><td>$${g.monto.toFixed(2)}</td></tr>`;
+      tbody.innerHTML += `
+        <tr class="hover:bg-pink-50 transition">
+          <td class="p-3 text-sm sm:text-base">${g.concepto}</td>
+          <td class="p-3 text-sm sm:text-base">$${g.monto.toFixed(2)}</td>
+        </tr>`;
     });
     document.getElementById("totalGastos").innerText = "Total de gastos: $" + total.toFixed(2);
     document.getElementById("saldoRestante").innerText = "Saldo restante: $" + (credito - total).toFixed(2);
     document.getElementById("creditoInput").value = credito;
   }
 
-  // 🔹 Escuchar cambios de sesión
+  // --- Manejar cambios de sesión con delay y loader ---
   onAuthStateChanged(auth, user => {
     if (user) {
       userId = user.uid;
-      document.getElementById("authDiv").style.display = "none";
-      document.getElementById("appDiv").style.display = "block";
-      cargarDatos();
+      showMessage("Cargando tu información...", "pink-500", true);
+
+      setTimeout(() => {
+        document.getElementById("authDiv").classList.add("hidden");
+        document.getElementById("appDiv").classList.remove("hidden");
+        cargarDatos();
+        authMessage.textContent = ""; // Limpiar mensaje
+      }, 2500);
     } else {
       userId = null;
-      document.getElementById("authDiv").style.display = "block";
-      document.getElementById("appDiv").style.display = "none";
+      setTimeout(() => {
+        document.getElementById("authDiv").classList.remove("hidden");
+        document.getElementById("appDiv").classList.add("hidden");
+        authMessage.textContent = "";
+      }, 2500);
     }
   });
 
-  // 🔹 Botones
+  // --- Botones ---
   document.getElementById("btnRegister").addEventListener("click", register);
   document.getElementById("btnLogin").addEventListener("click", login);
   document.getElementById("btnLogout").addEventListener("click", logout);
