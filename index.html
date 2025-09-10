@@ -74,15 +74,12 @@
   let gastos = [];
   let credito = 0;
 
+  // Registro
   async function register() {
     console.log("Register llamado");
     const email = document.getElementById("email").value;
     const pass = document.getElementById("password").value;
-
-    if(!email || !pass){
-      alert("Ingresa correo y contraseña");
-      return;
-    }
+    if (!email || !pass) { alert("Ingresa correo y contraseña"); return; }
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
@@ -90,7 +87,7 @@
       console.log("Registro exitoso:", uid);
       alert("Registro exitoso!");
 
-      // Crear documento inicial
+      // Documento inicial
       await setDoc(doc(db, "usuarios", uid), { credito: 0, gastos: [] });
     } catch (e) {
       console.error("Error en registro:", e);
@@ -99,15 +96,12 @@
     }
   }
 
+  // Login
   async function login() {
     console.log("Login llamado");
     const email = document.getElementById("email").value;
     const pass = document.getElementById("password").value;
-
-    if(!email || !pass){
-      alert("Ingresa correo y contraseña");
-      return;
-    }
+    if (!email || !pass) { alert("Ingresa correo y contraseña"); return; }
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
@@ -120,6 +114,7 @@
     }
   }
 
+  // Logout
   async function logout() {
     await signOut(auth);
     console.log("Sesión cerrada");
@@ -190,6 +185,13 @@
     document.getElementById("saldoRestante").innerText = "Saldo restante: $" + (credito - total).toFixed(2);
     document.getElementById("creditoInput").value = credito;
   }
+
+  // 🔹 Hacer funciones accesibles desde los botones
+  window.register = register;
+  window.login = login;
+  window.logout = logout;
+  window.setCredito = setCredito;
+  window.agregarGasto = agregarGasto;
 </script>
 
 </body>
